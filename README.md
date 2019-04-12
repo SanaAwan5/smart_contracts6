@@ -1,11 +1,12 @@
 # smart_contracts6
 
-# For Removing existing git repos.
+
+----For Removing existing git repos.
 
 rm -rf .git
 
 
-#Creatiing First time
+----Creatiing First time
 
 git init 
 
