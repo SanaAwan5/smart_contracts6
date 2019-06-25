@@ -40,7 +40,7 @@ class Gradient_List():
     def __len__(self):
         return self.repo.call.getNumGradientsforModel(self.model_id)
 
-    def generate_gradient_avg(self,agg_addr,transform_key, alpha = 1):
+    def generate_gradient_avg(self,agg_addr, alpha = 1):
         length = self.repo.call.getNumGradientsforModel(self.model_id)
         print('len',length)
         num_gradients = self.repo.call.getNumGradientsforModel(self.model_id)
@@ -71,8 +71,8 @@ class Gradient_List():
                 #print('vvvvbefore',type(v))
                 
                 #print('typeofout',type(transform_key.transform(v)))
-                temp=transform_key.sk.transform(v)
-                out.append(temp)
+                #temp=transform_key.sk.transform(v)
+                out.append(v)
 
                 #print('outis',transform_key.transform(v))          
                 #print('vvvvvvtransform',type(temp))
@@ -119,8 +119,8 @@ class Model():
     def __len__(self):
         return self.repo.call.getNumGradientsforModel(self.model_id)
 
-    def submit_gradient(self, owner, input, target,pubkey):
-        gradient = self.generate_encrypted_gradient(owner, input, target, pubkey)
+    def submit_gradient(self,gradient):
+        #gradient = self.generate_encrypted_gradient(owner, input, target, pubkey)
         self.repo.submit_gradient(gradient.owner,
                                   self.model_id, gradient.grad_values)
 
@@ -175,7 +175,7 @@ class Model():
         #print('hello')
         return new_model_error
 
-    def evaluate_gradient_from_avg(self,addr,agg_addr,avg,transform_key,prikey, pubkey, inputs, targets, alpha=1):
+    def evaluate_gradient_from_avg(self,addr,agg_addr,avg, inputs, targets, alpha=1):
         length = self.repo.call.getNumGradientsforModel(self.model_id)
         nwa = self.repo.call.getAvg(self.model_id,length)
         new_avg = self.repo.ipfs.retrieve(IPFSAddress().from_ethereum(nwa))
@@ -187,12 +187,12 @@ class Model():
             for v in new_avg_:
                 #print('vvvvvvbefore',type(v))
                 #print('v is',v)
-                out.append(transform_key.sk.finalDecrypt(v))
+                out.append(v)
                 #print('vvvvvv',type(transform_key.sk.finalDecrypt(v)))
         avg_grad_values = np.array(out).reshape(sh)
         
         candidate = copy.deepcopy(self.syft_obj)
-        candidate.weights=candidate.weights.decrypt(prikey)
+        #candidate.weights=candidate.weights.decrypt(prikey)
         candidate.weights -= (avg_grad_values * alpha) 
         #candidate.weights = candidate.weights.decrypt(prikey)
         candidate.encrypted = False
@@ -200,7 +200,7 @@ class Model():
         new_model_error = candidate.evaluate(inputs, targets)
 
         tx = self.repo.get_transaction(from_addr=addr)
-        ipfs_address = self.repo.ipfs.store(candidate.encrypt(pubkey))
+        ipfs_address = self.repo.ipfs.store(candidate)
         #length_ = length - 1
         tx.evalGradientfromAvg(self.model_id,agg_addr, new_model_error,
                         IPFSAddress().to_ethereum(ipfs_address))
